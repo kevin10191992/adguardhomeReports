@@ -8,3 +8,6 @@ logs/
 *.md
 .vscode/
 .idea/
+.agents/
+skills-lock.json
+architecture.*

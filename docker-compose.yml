@@ -1,5 +1,6 @@
 services:
   adguard-reports:
+    image: ghcr.io/kevin10191992/adguardhomereports:latest
     build: .
     container_name: adguard-reports
     restart: unless-stopped

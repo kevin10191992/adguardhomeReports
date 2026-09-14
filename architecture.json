@@ -1,0 +1,263 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Arquitectura AdGuard Home Report Generator",
+    "output": "architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "pipeline-completo",
+        "label": "Pipeline Principal",
+        "focus": [
+          "cron",
+          "entrypoint",
+          "orchestrator",
+          "api_client",
+          "analytics",
+          "report_engine",
+          "email_service",
+          "resend",
+          "recipient"
+        ],
+        "note": "Flujo principal desde la activación del cron hasta la entrega del informe por email."
+      },
+      {
+        "id": "extraccion-datos",
+        "label": "Extracción y Análisis",
+        "focus": ["adguard", "api_client", "orchestrator", "analytics"],
+        "note": "Consulta a la API de AdGuard Home, paginación de logs y análisis estadístico por cliente."
+      },
+      {
+        "id": "entrega-almacenamiento",
+        "label": "Generación y Entrega",
+        "focus": ["report_engine", "storage", "email_service", "resend", "recipient"],
+        "note": "Construcción de PDFs con gráficos, persistencia en disco y despacho vía Resend."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "cron",
+      "type": "backend",
+      "label": "Cron Scheduler",
+      "sublabel": "CRON_SCHEDULE",
+      "tag": "Programado",
+      "pos": [40, 310],
+      "size": [130, 60]
+    },
+    {
+      "id": "entrypoint",
+      "type": "cloud",
+      "label": "Container Runtime",
+      "sublabel": "entrypoint.sh",
+      "brand": "docker",
+      "pos": [230, 310],
+      "size": [130, 60]
+    },
+    {
+      "id": "orchestrator",
+      "type": "backend",
+      "label": "Orchestrator",
+      "sublabel": "main.py",
+      "brand": "python",
+      "pos": [410, 310],
+      "size": [135, 60]
+    },
+    {
+      "id": "api_client",
+      "type": "backend",
+      "label": "AdGuard Client",
+      "sublabel": "adguard_client.py",
+      "pos": [610, 160],
+      "size": [140, 60]
+    },
+    {
+      "id": "analytics",
+      "type": "backend",
+      "label": "Data Analyzer",
+      "sublabel": "data_analyzer.py",
+      "pos": [410, 460],
+      "size": [135, 60]
+    },
+    {
+      "id": "report_engine",
+      "type": "backend",
+      "label": "PDF Generator",
+      "sublabel": "ReportLab + Matplotlib",
+      "pos": [610, 460],
+      "size": [140, 60]
+    },
+    {
+      "id": "email_service",
+      "type": "backend",
+      "label": "Email Sender",
+      "sublabel": "email_sender.py",
+      "pos": [610, 310],
+      "size": [140, 60]
+    },
+    {
+      "id": "adguard",
+      "type": "security",
+      "label": "AdGuard Home",
+      "sublabel": "API REST :3000",
+      "tag": "Homelab",
+      "pos": [840, 160],
+      "size": [135, 60]
+    },
+    {
+      "id": "resend",
+      "type": "cloud",
+      "label": "Resend API",
+      "sublabel": "api.resend.com",
+      "tag": "HTTPS",
+      "pos": [840, 310],
+      "size": [135, 60]
+    },
+    {
+      "id": "recipient",
+      "type": "external",
+      "label": "Email Recipient",
+      "sublabel": "Informes PDF",
+      "pos": [840, 460],
+      "size": [135, 60]
+    },
+    {
+      "id": "storage",
+      "type": "database",
+      "label": "Mounted Volumes",
+      "sublabel": "./reports & ./logs",
+      "pos": [610, 610],
+      "size": [140, 60]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Docker Container: adguard-reports",
+      "wraps": [
+        "entrypoint",
+        "orchestrator",
+        "api_client",
+        "analytics",
+        "report_engine",
+        "email_service"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "Host Storage",
+      "wraps": ["storage"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "cron-to-entrypoint",
+      "from": "cron",
+      "to": "entrypoint",
+      "label": "disparo",
+      "variant": "emphasis"
+    },
+    {
+      "id": "entrypoint-to-orchestrator",
+      "from": "entrypoint",
+      "to": "orchestrator",
+      "label": "ejecuta"
+    },
+    {
+      "id": "orchestrator-to-client",
+      "from": "orchestrator",
+      "to": "api_client",
+      "label": "solicita logs",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "client-to-adguard",
+      "from": "api_client",
+      "to": "adguard",
+      "label": "GET /querylog",
+      "variant": "security"
+    },
+    {
+      "id": "orchestrator-to-analytics",
+      "from": "orchestrator",
+      "to": "analytics",
+      "label": "logs crudos",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "analytics-to-engine",
+      "from": "analytics",
+      "to": "report_engine",
+      "label": "métricas"
+    },
+    {
+      "id": "engine-to-storage",
+      "from": "report_engine",
+      "to": "storage",
+      "label": "guarda PDF",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "engine-to-email",
+      "from": "report_engine",
+      "to": "email_service",
+      "label": "adjuntos",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDy": -24
+    },
+    {
+      "id": "email-to-resend",
+      "from": "email_service",
+      "to": "resend",
+      "label": "POST /emails",
+      "variant": "emphasis"
+    },
+    {
+      "id": "resend-to-recipient",
+      "from": "resend",
+      "to": "recipient",
+      "label": "entrega",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Automatización y Despliegue",
+      "items": [
+        "Cron interno en contenedor Docker ejecuta main.py diariamente",
+        "Configuración centralizada por variables de entorno (.env)",
+        "Red homelab para conectividad segura con AdGuard Home"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Extracción y Analítica DNS",
+      "items": [
+        "API REST de AdGuard Home con autenticación Basic y paginación cursor",
+        "Mapeo de clientes nombrados y filtrado específico por IPs/IDs",
+        "Clasificación automática en 13 categorías (redes, streaming, gaming...)",
+        "Evaluación de riesgo por amenazas (malware, phishing, control parental)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Generación de Informes y Notificación",
+      "items": [
+        "Construcción de PDFs con ReportLab y gráficos Matplotlib incrustados",
+        "Persistencia local en volumen ./reports por fecha YYYY-MM-DD",
+        "Despacho automatizado mediante Resend API con PDFs adjuntos y resumen HTML"
+      ]
+    }
+  ]
+}
