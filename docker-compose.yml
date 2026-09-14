@@ -1,0 +1,40 @@
+services:
+  adguard-reports:
+    build: .
+    container_name: adguard-reports
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./reports:/app/reports
+      - ./logs:/app/logs
+    environment:
+      # --- AdGuard Home ---
+      # Sobrescriben valores de .env si se definen aquí
+      # ADGUARD_URL: http://192.168.1.1:3000
+      # ADGUARD_USER: admin
+      # ADGUARD_PASS: your_password
+
+      # --- Resend Email ---
+      # RESEND_API_KEY: re_xxxxxxxxxxxx
+      # EMAIL_FROM: AdGuard Reports <informes@tudominio.com>
+      # EMAIL_TO: tu@email.com
+
+      # --- Schedule & Timezone ---
+      # CRON_SCHEDULE: "0 6 * * *"     # Diario a las 6:00 AM
+      TZ: America/Bogota
+      # --- Report Settings ---
+      # QUERYLOG_HOURS: 24
+      # QUERYLOG_LIMIT: 5000
+      # TOP_DOMAINS_COUNT: 20
+      # LOG_LEVEL: INFO
+
+      # --- Ejecutar al iniciar el contenedor ---
+      # RUN_ON_START: "true"
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    driver: bridge
+    # Si no usas una red externa, cambia a:
+    # driver: bridge
